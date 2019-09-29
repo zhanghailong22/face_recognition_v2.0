@@ -1,7 +1,8 @@
-This repo is used for develop app based on osdt mep
-This repo is used for develop app based on osdt mep
+
 face_recognition_service
 ===
+This repo is used for develop app based on osdt mep
+-----
 This is an app application for face recognition microservices.The service was developed
 on the basis of an open project for face recognition on github.The project is characterized
 by the following：
@@ -49,6 +50,8 @@ macOS or Linux (Windows not officially supported, but might work)<br>
 Installation Options:(ubuntu18.04)<br>
 Third party library:dlib face_recognition flask redis opencv-python requests 
 
+Build
+-----
 Build a docker image:docker build . -t face_recognition<br>
 docker-compose.yml:docker-compose build<br>
 Pull service: docker-compose up -d<br>
