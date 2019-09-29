@@ -1,1 +1,1 @@
-# face_recognition_v2.0
+This repo is used for develop app based on osdt mep
