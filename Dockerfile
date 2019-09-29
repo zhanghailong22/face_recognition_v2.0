@@ -53,4 +53,4 @@ WORKDIR /root/face_recognition_service/face_recognition_service
 
 RUN pip install -r requirements.txt
 
-CMD ["python", "face_recogintion_app.py"]
+CMD ["python", "face_recognition_app.py"]
