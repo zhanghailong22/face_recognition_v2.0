@@ -4,10 +4,11 @@
 # Its functions are: face upload, face recognition, Video face recognition, etc.
 # The restfull api is http://127.0.0.1:9999. Database is redis, used to store
 # the feature vector of the face.
+# Store face images in data volume mysql
 # Author e-mail:zhanghailong22@huawei.com
 #
 import os
-
+import pymysql
 import video_camera
 from flask import Flask, Response, request, jsonify
 import redis
@@ -16,21 +17,30 @@ import numpy as np
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
+# 连接redis
 pool = redis.ConnectionPool(host='127.0.0.1', port=6379)
 # pool = redis.ConnectionPool(host='redis', port=6379)
+
+# 图像录入
 @app.route('/upload', methods=['POST'])
 def upload():
     if 'file' not in request.files:
         return jsonify({'code': 500, 'msg': '没有文件'})
-
     files = request.files.getlist("file")
+    conn = pymysql.Connect(host='127.0.0.1', user='root', password='root', database='face_images')
+    cursor = conn.cursor()
     for file in files:
-        file_path = os.path.join('images/', file.filename)
         if file:
-            file.save(file_path)
+            # 保存在mysql数据库中
+            img = file.read()
+            name = file.filename[0:-4]
+            sql = 'insert ignore into image_data (name,image) values(%s, %s);'
+            data = [(name, pymysql.Binary(img))]
+            cursor.executemany(sql, data)
+            conn.commit()
         else:
             return 'failed'
-        name = file.filename[0:-4]
+        # 将人脸向量保存在redis数据库
         image = face_recognition.load_image_file(file)
         face_locations = face_recognition.face_locations(image)
         if len(face_locations) != 1:
@@ -40,11 +50,13 @@ def upload():
         r = redis.Redis(connection_pool=pool)
         # 录入人名-对应特征向量
         r.set(name, face_encodings[0].tobytes())
+    cursor.close()
+    conn.close()
     return jsonify({'code': 0, 'result': '录入成功'})
 
 # 人脸搜索
 @app.route('/search_images', methods=['POST'])
-def search_practice():
+def searchImages():
     if 'file' not in request.files:
         return jsonify({'code': 500, 'result': '没有文件'})
     file = request.files['file']
@@ -72,7 +84,7 @@ def search_practice():
 
 # 视频监控
 @app.route('/search_video', methods=['POST'])
-def search_video():
+def searchVideo():
     # 连数据库
     r = redis.Redis(connection_pool=pool)
     # 取出所有的人名和它对应的特征向量
@@ -83,24 +95,33 @@ def search_video():
 
     return jsonify({'names': face_names})
 
-# 更新redis，将人脸图片的特征向量导入redis数据库
-@app.route('/update_redis', methods=['POST'])
-def update_redis():
-    directory_name="images"
-    # 连数据库
+# 刷新redis，将mysql数据库中的人脸图片生成特征向量并导入redis数据库
+@app.route('/refresh_redis', methods=['POST'])
+def updateRedis():
+    # 1.连接mysql数据库
+    conn = pymysql.connect(host='127.0.0.1', user='root', password='root', db='face_images')
+    # 2.创建游标
+    cursor = conn.cursor()
+    sql = "select * from image_data"
+    cursor.execute(sql)  # 执行sql
+    # 查询所有数据，返回结果默认以元组形式，所以可以进行迭代处理
     r = redis.Redis(connection_pool=pool)
-    for filename in os.listdir(directory_name):
-        file = open(directory_name + "/" + filename, 'rb')
-        name = filename[0:-4]
+    for i in cursor.fetchall():
+        name = i[0]
+        fout = open('image.jpg', 'wb')
+        fout.write(i[1])
+        file = open('image.jpg', 'rb')
         image = face_recognition.load_image_file(file)
         face_locations = face_recognition.face_locations(image)
         face_encodings = face_recognition.face_encodings(image, face_locations)
 
         # 录入人名-对应特征向量
         r.set(name, face_encodings[0].tobytes())
+    cursor.close()
+    conn.close()
     names = r.keys()
 
-    return jsonify({'redis中人脸数目': len(names), 'result': '更新成功'})
+    return jsonify({'redis中人脸数目': len(names), 'result': '刷新成功'})
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", debug=True, port=9999)

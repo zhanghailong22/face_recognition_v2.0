@@ -8,3 +8,5 @@ flask
 redis
 opencv-python
 requests
+Flask-SQLAlchemy
+PyMySQL

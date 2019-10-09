@@ -8,21 +8,21 @@ from flask import Flask, Response, request, jsonify
 # 录入
 url = "http://127.0.0.1:9999/upload"
 
-filepath = 'D:\code_input_gitlab\osdt-mep-app\examples/biden.jpg'
+filepath = 'D:/osdt-mep-app/face_recognition/examples/biden.jpg'
 split_path = filepath.split('/')
 filename = split_path[-1]
-print(filename)
 
 file = open(filepath, 'rb')
 files = {'file': (filename, file, 'image/jpg')}
-
+print(files)
 r = requests.post(url, files=files)
 result = r.text
+print(result)
 
 # 查询
 url = "http://127.0.0.1:9999/search_images"
 
-filepath = 'D:\code_input_gitlab\osdt-mep-app\examples/two_people.jpg'
+filepath = 'D:/osdt-mep-app/face_recognition/examples/two_people.jpg'
 split_path = filepath.split('/')
 filename = split_path[-1]
 print(filename)
@@ -34,15 +34,15 @@ r = requests.post(url, files=files)
 result = r.text
 print(result)
 
-# 视频
-url = "http://127.0.0.1:9999/search_video"
+# # 视频监控
+# url = "http://127.0.0.1:9999/search_video"
+#
+# r = requests.post(url)
+# result = r.text
+# print(result)
 
-r = requests.post(url)
-result = r.text
-print(result)
-
-# 更新redis
-url = "http://127.0.0.1:9999/update_redis"
+# 刷新redis
+url = "http://127.0.0.1:9999/refresh_redis"
 
 r = requests.post(url)
 result = r.text
